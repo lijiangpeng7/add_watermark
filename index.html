@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>图片加水印</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover">
+    <link
+      rel="stylesheet"
+      href="https://fastly.jsdelivr.net/npm/vant@4/lib/index.css"
+    />
+    <style>
+      .van-image{
+        width: 100%;
+        height: auto;
+      }
+      .van-uploader,.van-uploader__wrapper,.van-uploader__preview{
+        width: 100%;
+      }
+      .van-uploader__preview{
+        margin: 0;
+      }
+      #img-box{
+        position: relative;
+        display: flex;
+      }
+      #img-box .watermark{
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        z-index: 99;
+        color: white;
+      }
+    </style>
+
+    <script>
+      // 对Date的扩展，将 Date 转化为指定格式的String
+      // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
+      // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
+      // 例子：
+      // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
+      // (new Date()).Format("yyyy-M-d h:m:s.S") ==> 2006-7-2 8:9:4.18
+
+      Date.prototype.Format = function (fmt) { // author: meizz
+          var o = {
+              "M+": this.getMonth() + 1, // 月份
+              "d+": this.getDate(), // 日
+              "h+": this.getHours(), // 小时
+              "m+": this.getMinutes(), // 分
+              "s+": this.getSeconds(), // 秒
+              "q+": Math.floor((this.getMonth() + 3) / 3), // 季度
+              "S": this.getMilliseconds() // 毫秒
+          };
+          if (/(y+)/.test(fmt))
+              fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+          for (var k in o)
+              if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                  return fmt;
+      }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://fastly.jsdelivr.net/npm/vue@3"></script>
+    <script src="https://fastly.jsdelivr.net/npm/vant@4/lib/vant.min.js"></script>
+  </head>
+<body>
+
+<div id="app">
+  <div>
+    <van-cell-group inset>
+      <van-field v-model="watermark" label="水印内容" placeholder="请输入水印内容">
+        <template #button>
+          <van-button size="small" type="primary" @click="saveImg">保存图片</van-button>
+        </template>
+      </van-field>
+    </van-cell-group>
+
+    <div id="img-box">
+      <div class="watermark">{{watermark}}</div>
+      <van-uploader v-model="fileList" multiple :max-count="1" />
+    </div>
+  </div>
+</div>
+<script>
+  // 在 #app 标签下渲染一个按钮组件
+  const app = Vue.createApp({
+    data(){
+      return {
+        fileList: [],
+        watermark: ''
+      }
+    },
+    mounted() {
+      this.watermark = new Date().Format("yyyy-MM-dd hh:mm:ss"); 
+      console.log(123)
+    },
+    methods: {
+      saveImg() {
+        document.querySelector(".van-uploader__preview-delete--shadow").style.display = 'none';
+        html2canvas(document.getElementById("img-box"), {
+          allowTaint: true,
+          useCORS: true,
+          // ignoreElements: ['.van-uploader__preview-delete--shadow']
+        }).then(canvas => {
+          // var url = canvas.toDataURL("image/jpeg", 1.0);
+          // vara = document.createElement("a");
+          // vara.download = "test.jpg";
+          // vara.href = url;
+
+          var imgURL = canvas.toDataURL({format: "image/jpg", quality:1});
+          var dlLink = document.createElement('a');
+          dlLink.download = "加水印图片";
+          dlLink.href = imgURL;
+          // dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
+          document.body.appendChild(dlLink);
+          dlLink.click();
+          document.body.removeChild(dlLink);
+
+          document.querySelector(".van-uploader__preview-delete--shadow").style.display = 'block';
+
+          vant.showToast('保存成功');
+          // let image =  new  Image();
+          // image.src =  canvas.toDataURL({format: 'image/png', quality:1});
+          // var url = image.src.replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+          // return image;
+          // window.open(url);
+          
+        })
+      }
+    }
+  });
+  app.use(vant);
+
+  // 通过 CDN 引入时不会自动注册 Lazyload 组件
+  // 可以通过下面的方式手动注册
+  app.use(vant.Lazyload);
+
+  // 调用工具函数，弹出一个 Toas
+
+  app.mount('#app');
+</script>
+</body>
+</html>
